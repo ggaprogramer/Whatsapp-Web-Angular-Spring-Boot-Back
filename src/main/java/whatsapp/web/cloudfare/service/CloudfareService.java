@@ -1,0 +1,221 @@
+package whatsapp.web.cloudfare.service;
+
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.*;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.util.List;
+
+@Service
+public class CloudfareService {
+
+    @Value("${spring.cloudfare.secret-key}")
+    private String secretKey;
+
+    @Value("${spring.cloudfare.access-key}")
+    private String accessKey;
+
+    @Value("${spring.cloudfare.r2-region}")
+    private String r2Region;
+
+    @Value("${spring.cloudfare.account-id}")
+    private String accountId;
+
+    private S3Client s3;
+
+    @PostConstruct
+    public void initCloudFareService() {
+        this.s3 = S3Client.builder()
+                .endpointOverride(URI.create("https://" + this.accountId + ".r2.cloudflarestorage.com"))
+                .credentialsProvider(
+                        StaticCredentialsProvider.create(AwsBasicCredentials.create(this.accessKey, this.secretKey))
+                )
+                .region(Region.of(this.r2Region))
+                .build();
+    }
+
+    public ResponseEntity<?> createBucket(String bucketName){
+        try {
+            CreateBucketRequest request = CreateBucketRequest.builder()
+                    .bucket(bucketName)
+                    .build();
+
+            CreateBucketResponse response = s3.createBucket(request);
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body("Bucket created: " + response.location());
+        } catch (S3Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body("Error: " + e.awsErrorDetails().errorMessage());
+        }
+    }
+
+    public Boolean doesBucketExist(String bucketName) {
+        try {
+            HeadBucketRequest headRequest = HeadBucketRequest.builder()
+                    .bucket(bucketName)
+                    .build();
+            HeadBucketResponse response = s3.headBucket(headRequest);
+            return response != null;
+        } catch (S3Exception e) {
+            return false;
+        }
+    }
+
+    public boolean isBucketEmpty(String bucketName) {
+        try {
+            ListObjectsRequest listObjectsRequest = ListObjectsRequest.builder()
+                    .bucket(bucketName)
+                    .build();
+            ListObjectsResponse listObjectsResponse = s3.listObjects(listObjectsRequest);
+
+            // Se a lista de objetos estiver vazia, o bucket está vazio
+            return listObjectsResponse.contents().isEmpty();
+        } catch (S3Exception e) {
+            return false; // Em caso de erro, consideramos que o bucket não está vazio
+        }
+    }
+
+    public ResponseEntity<?> deleteBucket(String bucketName) {
+        try {
+            // Verifica se o bucket existe antes de tentar deletá-lo
+            if (!doesBucketExist(bucketName)) {
+                return ResponseEntity
+                        .status(HttpStatus.NOT_FOUND)
+                        .body("Bucket not found: " + bucketName);
+            }
+
+            // Verifica se o bucket está vazio
+            if (!isBucketEmpty(bucketName)) {
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("Bucket is not empty: " + bucketName);
+            }
+
+            // Cria o objeto DeleteBucketRequest
+            DeleteBucketRequest deleteBucketRequest = DeleteBucketRequest.builder()
+                    .bucket(bucketName)
+                    .build();
+
+            // Exclui o bucket
+            s3.deleteBucket(deleteBucketRequest);
+
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body("Bucket deleted successfully: " + bucketName);
+
+        } catch (S3Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error deleting bucket: " + e.getMessage());
+        }
+    }
+
+    public ResponseEntity<?> uploadFile(String bucketName, String fileName, InputStream fileContent) {
+        try {
+            // Verifica se o bucket existe antes de tentar enviar o arquivo
+            if (!doesBucketExist(bucketName)) {
+                return ResponseEntity
+                        .status(HttpStatus.NOT_FOUND)
+                        .body("Bucket not found: " + bucketName);
+            }
+
+            // Cria o objeto PutObjectRequest
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(fileName) // Nome do arquivo no bucket
+                    .build();
+
+            // Envia o arquivo para o bucket
+            s3.putObject(putObjectRequest, RequestBody.fromInputStream(fileContent, fileContent.available()));
+
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body("File uploaded successfully to bucket: " + bucketName);
+
+        } catch (S3Exception | IOException e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error uploading file: " + e.getMessage());
+        }
+    }
+
+    public ResponseEntity<?> deleteFile(String bucketName, String fileName) {
+        try {
+            // Verifica se o bucket existe antes de tentar deletar o arquivo
+            if (!doesBucketExist(bucketName)) {
+                return ResponseEntity
+                        .status(HttpStatus.NOT_FOUND)
+                        .body("Bucket not found: " + bucketName);
+            }
+
+            // Cria o objeto DeleteObjectRequest
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(fileName) // Nome do arquivo a ser deletado
+                    .build();
+
+            // Deleta o arquivo do bucket
+            s3.deleteObject(deleteObjectRequest);
+
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body("File deleted successfully: " + fileName);
+
+        } catch (S3Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error deleting file: " + e.getMessage());
+        }
+    }
+
+    public ResponseEntity<?> listFiles(String bucketName) {
+        try {
+            // Verifica se o bucket existe antes de tentar listar os arquivos
+            if (!doesBucketExist(bucketName)) {
+                return ResponseEntity
+                        .status(HttpStatus.NOT_FOUND)
+                        .body("Bucket not found: " + bucketName);
+            }
+
+            // Cria o objeto ListObjectsRequest
+            ListObjectsRequest listObjectsRequest = ListObjectsRequest.builder()
+                    .bucket(bucketName)
+                    .build();
+
+            // Lista os objetos do bucket
+            ListObjectsResponse listObjectsResponse = s3.listObjects(listObjectsRequest);
+
+            // Obtém a lista de arquivos (objetos)
+            List<S3Object> objects = listObjectsResponse.contents();
+
+            if (objects.isEmpty()) {
+                return ResponseEntity
+                        .status(HttpStatus.OK)
+                        .body("Bucket is empty: " + bucketName);
+            }
+
+            // Se houver arquivos, retorna a lista
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(objects);
+
+        } catch (S3Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error listing files: " + e.getMessage());
+        }
+    }
+}

@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: whatsappweb
+  datasource:
+    url: jdbc:postgresql://localhost:5432/database_whatsapp_web
+    username: myuser
+    password: mypassword
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+  configuration:
+    host-front-end: http://localhost:4200
+    cookie-set-secure: false
+
+  cloudfare:
+    access-key: ${ACCESS_KEY_CLOUDFARE}
+    secret-key: ${SECRET_KEY_CLOUDFARE}
+    account-id: ${ACCOUNT_ID_CLOUDFARE}
+    r2-region: ${R2_REGION_CLOUDFARE}
