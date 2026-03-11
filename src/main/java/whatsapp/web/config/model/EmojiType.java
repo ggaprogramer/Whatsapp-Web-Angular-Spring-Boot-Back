@@ -4,12 +4,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Table
 @Data
-public class Emoji {
+public class EmojiType {
+
     @JsonIgnore
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -22,9 +25,8 @@ public class Emoji {
     private String value;
 
     @JsonIgnore
-    @ManyToOne
-    @JoinColumn(name = "type_id", nullable = false)
-    private EmojiType type;
+    @OneToMany(mappedBy = "type", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Emoji> emojis = new ArrayList<>();
 
     @Override
     public String toString() {
