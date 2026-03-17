@@ -1,4 +1,4 @@
-package whatsapp.web.authentication.model;
+package whatsapp.web.profile.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToOne;
@@ -13,15 +13,15 @@ import java.util.UUID;
 @Table
 @Getter
 @Setter
-public class UserPhoto {
+public class ProfilePhoto {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @OneToOne
-    @JoinColumn(name = "usuario_id", referencedColumnName = "id", nullable = false)
-    private Usuario user;
+    @JoinColumn(name = "profile_id", referencedColumnName = "id", nullable = false)
+    private Profile user;
 
     @Column
     private String bucket;

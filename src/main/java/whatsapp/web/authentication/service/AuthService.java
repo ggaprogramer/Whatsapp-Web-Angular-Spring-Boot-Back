@@ -17,6 +17,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import whatsapp.web.config.service.CookieService;
+import whatsapp.web.profile.model.Profile;
+import whatsapp.web.profile.service.ProfileService;
 
 import java.time.Duration;
 import java.util.List;
@@ -29,6 +31,7 @@ public class AuthService {
     private Boolean cookieSetSecure;
 
     private final UserService userService;
+    private final ProfileService profileService;
     private final PasswordEncoder encoder;
     private final TokenService tokenService;
     private final CookieService cookieService;
@@ -88,6 +91,7 @@ public class AuthService {
         }
 
         try {
+            userService.updateLastLogin(usuario);
             String token = tokenService.generateToken(usuario, expirationToken);
 
             ResponseCookie cookie = ResponseCookie.from("token", token)
@@ -217,7 +221,9 @@ public class AuthService {
                             "A senha precisa ter no mínimo 8 caracteres."));
         }
 
-        Usuario novoUsuario = userService.salvarUsuario(registroDTO);
+        Usuario newUser = userService.createUser(registroDTO);
+        Profile profile = profileService.createProfile(newUser);
+
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(new ResponseRegisterDTO(

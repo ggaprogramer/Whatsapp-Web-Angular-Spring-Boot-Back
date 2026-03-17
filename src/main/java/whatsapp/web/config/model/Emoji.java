@@ -18,7 +18,7 @@ public class Emoji {
     @Column(nullable = false, length=1000)
     private String name;
 
-    @Column(nullable = false, length=1000, unique = true)
+    @Column(nullable = false, length=100)
     private String value;
 
     @JsonIgnore

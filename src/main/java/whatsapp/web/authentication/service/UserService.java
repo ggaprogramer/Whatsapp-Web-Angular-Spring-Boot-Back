@@ -1,5 +1,8 @@
 package whatsapp.web.authentication.service;
 
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import whatsapp.web.authentication.dto.LoginDTO;
 import whatsapp.web.authentication.dto.RegistroDTO;
 import whatsapp.web.authentication.model.Usuario;
@@ -7,7 +10,11 @@ import whatsapp.web.authentication.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import whatsapp.web.authentication.security.TokenService;
+import whatsapp.web.config.service.CookieService;
+import whatsapp.web.profile.model.Profile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,6 +25,18 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder encoder;
+    private final CookieService cookieService;
+    private final TokenService tokenService;
+
+    public String getIdUserAuthenticated(HttpServletRequest request) {
+        String token = this.cookieService.getCookie("token", request);
+        if(token != null){
+            String idUser = tokenService.validateToken(token);
+            if(idUser != null) return idUser;
+            return null;
+        };
+        return null;
+    }
 
     public Usuario encontrarPorId(UUID uuid){
         Optional<Usuario> usuario = userRepository.findById(uuid);
@@ -43,7 +62,7 @@ public class UserService {
         return usuario.orElse(null);
     }
 
-    public Usuario salvarUsuario(RegistroDTO registroDTO){
+    public Usuario createUser(RegistroDTO registroDTO){
         Usuario usuario = new Usuario();
 
         String passwordCriptografada = encoder.encode(registroDTO.password1());
@@ -56,4 +75,8 @@ public class UserService {
         return userRepository.save(usuario);
     }
 
+    public void updateLastLogin(Usuario usuario){
+        usuario.setLastLogin(LocalDateTime.now());
+        userRepository.save(usuario);
+    }
 }

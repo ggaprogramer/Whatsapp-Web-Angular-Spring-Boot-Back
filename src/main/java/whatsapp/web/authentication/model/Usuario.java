@@ -3,14 +3,14 @@ package whatsapp.web.authentication.model;
 import jakarta.persistence.*;
 import whatsapp.web.authentication.enumeracoes.RolesUsers;
 import lombok.Data;
-import net.minidev.json.annotate.JsonIgnore;
 import org.hibernate.annotations.JdbcTypeCode;
+import whatsapp.web.profile.model.Profile;
+import whatsapp.web.profile.model.ProfilePhoto;
 
 import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Entity
 @Table
@@ -34,7 +34,7 @@ public class Usuario {
     private String email;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private UserPhoto photo;
+    private Profile profile;
 
     @Column(name="last_login", nullable = true)
     private LocalDateTime lastLogin;
@@ -54,5 +54,10 @@ public class Usuario {
     @Column(name = "roles", columnDefinition = "varchar[]")
     @Enumerated(EnumType.STRING)
     private List<RolesUsers> roles;
+
+    @Override
+    public String toString() {
+        return String.valueOf(this.id);
+    }
 
 }
