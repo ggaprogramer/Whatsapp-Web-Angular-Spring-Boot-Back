@@ -28,16 +28,6 @@ public class UserService {
     private final CookieService cookieService;
     private final TokenService tokenService;
 
-    public String getIdUserAuthenticated(HttpServletRequest request) {
-        String token = this.cookieService.getCookie("token", request);
-        if(token != null){
-            String idUser = tokenService.validateToken(token);
-            if(idUser != null) return idUser;
-            return null;
-        };
-        return null;
-    }
-
     public Usuario encontrarPorId(UUID uuid){
         Optional<Usuario> usuario = userRepository.findById(uuid);
         return usuario.orElse(null);
@@ -78,5 +68,11 @@ public class UserService {
     public void updateLastLogin(Usuario usuario){
         usuario.setLastLogin(LocalDateTime.now());
         userRepository.save(usuario);
+    }
+
+    public Usuario updateUser(Usuario user, String name){
+        user.setName(name);
+        userRepository.save(user);
+        return user;
     }
 }

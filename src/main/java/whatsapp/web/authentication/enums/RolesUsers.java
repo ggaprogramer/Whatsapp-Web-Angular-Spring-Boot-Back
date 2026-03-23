@@ -1,7 +1,5 @@
-package whatsapp.web.authentication.enumeracoes;
-import lombok.Data;
+package whatsapp.web.authentication.enums;
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
 public enum RolesUsers {

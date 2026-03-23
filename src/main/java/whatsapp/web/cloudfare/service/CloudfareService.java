@@ -11,10 +11,15 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URL;
+import java.time.Duration;
 import java.util.List;
 
 @Service
@@ -32,12 +37,15 @@ public class CloudfareService {
     @Value("${spring.cloudfare.account-id}")
     private String accountId;
 
+    private URI endpoint;
+
     private S3Client s3;
 
     @PostConstruct
     public void initCloudFareService() {
+        this.endpoint = URI.create("https://" + this.accountId + ".r2.cloudflarestorage.com");
         this.s3 = S3Client.builder()
-                .endpointOverride(URI.create("https://" + this.accountId + ".r2.cloudflarestorage.com"))
+                .endpointOverride(this.endpoint)
                 .credentialsProvider(
                         StaticCredentialsProvider.create(AwsBasicCredentials.create(this.accessKey, this.secretKey))
                 )
@@ -45,21 +53,53 @@ public class CloudfareService {
                 .build();
     }
 
-    public ResponseEntity<?> createBucket(String bucketName){
+    public Boolean createBucket(String newBucketName) {
         try {
-            CreateBucketRequest request = CreateBucketRequest.builder()
-                    .bucket(bucketName)
+            AwsBasicCredentials awsCreds = AwsBasicCredentials.create(this.accessKey, this.secretKey);
+
+            // Criar cliente para a API S3
+            S3Client s3Client = S3Client.builder()
+                    .region(Region.of(this.r2Region)) // Região do seu bucket
+                    .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
+                    .endpointOverride(this.endpoint)  // Cloudflare R2 endpoint
                     .build();
 
-            CreateBucketResponse response = s3.createBucket(request);
-            return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .body("Bucket created: " + response.location());
-        } catch (S3Exception e) {
-            return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .body("Error: " + e.awsErrorDetails().errorMessage());
+            // Criar o bucket
+            CreateBucketRequest createBucketRequest = CreateBucketRequest.builder()
+                    .bucket(newBucketName)
+                    .build();
+
+            s3Client.createBucket(createBucketRequest);
+        } catch (Exception e) {
+            return false;
         }
+
+        return true;
+    }
+
+    public String generateLinkFile(String bucketName, String fileName) throws S3Exception, IOException{
+        AwsBasicCredentials awsCreds = AwsBasicCredentials.create(this.accessKey, this.secretKey);
+
+        // Criando o cliente para a API S3
+        S3Presigner s3Presigner = S3Presigner.builder()
+                .region(Region.of(this.r2Region)) // Ajuste conforme a região do seu bucket
+                .credentialsProvider(StaticCredentialsProvider.create(awsCreds))
+                .endpointOverride(this.endpoint)
+                .build();
+
+        // Criar a solicitação para obter um objeto
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(fileName)
+                .build();
+
+        // Gerar o URL pré-assinado
+        PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(
+                presignedGetObjectRequest -> presignedGetObjectRequest.getObjectRequest(getObjectRequest)
+                        .signatureDuration(Duration.ofMinutes(15)) // Link válido por 15 minutos
+        );
+
+        return presignedRequest.url().toString();
     }
 
     public Boolean doesBucketExist(String bucketName) {
@@ -88,20 +128,16 @@ public class CloudfareService {
         }
     }
 
-    public ResponseEntity<?> deleteBucket(String bucketName) {
+    public Boolean deleteBucket(String bucketName) {
         try {
             // Verifica se o bucket existe antes de tentar deletá-lo
             if (!doesBucketExist(bucketName)) {
-                return ResponseEntity
-                        .status(HttpStatus.NOT_FOUND)
-                        .body("Bucket not found: " + bucketName);
+                return false;
             }
 
             // Verifica se o bucket está vazio
             if (!isBucketEmpty(bucketName)) {
-                return ResponseEntity
-                        .status(HttpStatus.BAD_REQUEST)
-                        .body("Bucket is not empty: " + bucketName);
+                return false;
             }
 
             // Cria o objeto DeleteBucketRequest
@@ -112,53 +148,43 @@ public class CloudfareService {
             // Exclui o bucket
             s3.deleteBucket(deleteBucketRequest);
 
-            return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .body("Bucket deleted successfully: " + bucketName);
+            return true;
 
         } catch (S3Exception e) {
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error deleting bucket: " + e.getMessage());
+            return false;
         }
     }
 
-    public ResponseEntity<?> uploadFile(String bucketName, String fileName, InputStream fileContent) {
+
+    public Boolean uploadFile(String bucketName, String fileName, InputStream fileContent,
+                              String mimeType) {
         try {
             // Verifica se o bucket existe antes de tentar enviar o arquivo
             if (!doesBucketExist(bucketName)) {
-                return ResponseEntity
-                        .status(HttpStatus.NOT_FOUND)
-                        .body("Bucket not found: " + bucketName);
+                this.createBucket(bucketName);
             }
 
             // Cria o objeto PutObjectRequest
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(fileName) // Nome do arquivo no bucket
+                    .contentType(mimeType) // Adiciona o tipo MIME
                     .build();
 
             // Envia o arquivo para o bucket
             s3.putObject(putObjectRequest, RequestBody.fromInputStream(fileContent, fileContent.available()));
 
-            return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .body("File uploaded successfully to bucket: " + bucketName);
-
+            return true;
         } catch (S3Exception | IOException e) {
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error uploading file: " + e.getMessage());
+            return false;
         }
     }
 
-    public ResponseEntity<?> deleteFile(String bucketName, String fileName) {
+    public Boolean deleteFile(String bucketName, String fileName) {
         try {
             // Verifica se o bucket existe antes de tentar deletar o arquivo
             if (!doesBucketExist(bucketName)) {
-                return ResponseEntity
-                        .status(HttpStatus.NOT_FOUND)
-                        .body("Bucket not found: " + bucketName);
+                return false;
             }
 
             // Cria o objeto DeleteObjectRequest
@@ -170,14 +196,10 @@ public class CloudfareService {
             // Deleta o arquivo do bucket
             s3.deleteObject(deleteObjectRequest);
 
-            return ResponseEntity
-                    .status(HttpStatus.OK)
-                    .body("File deleted successfully: " + fileName);
+            return true;
 
         } catch (S3Exception e) {
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error deleting file: " + e.getMessage());
+            return false;
         }
     }
 

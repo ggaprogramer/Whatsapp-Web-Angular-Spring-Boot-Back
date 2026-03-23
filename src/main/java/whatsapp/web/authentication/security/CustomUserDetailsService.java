@@ -1,9 +1,7 @@
 package whatsapp.web.authentication.security;
 
-import whatsapp.web.authentication.enumeracoes.RolesUsers;
 import whatsapp.web.authentication.model.Usuario;
 import whatsapp.web.authentication.repository.UserRepository;
-import whatsapp.web.authentication.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
