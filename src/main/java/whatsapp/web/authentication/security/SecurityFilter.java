@@ -2,10 +2,9 @@ package whatsapp.web.authentication.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import whatsapp.web.authentication.enumeracoes.RolesUsers;
+import whatsapp.web.authentication.enums.RolesUsers;
 import whatsapp.web.authentication.model.Usuario;
 import whatsapp.web.authentication.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

@@ -1,5 +1,5 @@
 package whatsapp.web.authentication.dto;
-import whatsapp.web.authentication.enumeracoes.RolesUsers;
+import whatsapp.web.authentication.enums.RolesUsers;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package whatsapp.web.authentication.enumeracoes;
+package whatsapp.web.authentication.enums;
 
 public enum StatusResponse {
     SUCCESS,

@@ -1,11 +1,10 @@
 package whatsapp.web.authentication.model;
 
 import jakarta.persistence.*;
-import whatsapp.web.authentication.enumeracoes.RolesUsers;
+import whatsapp.web.authentication.enums.RolesUsers;
 import lombok.Data;
 import org.hibernate.annotations.JdbcTypeCode;
 import whatsapp.web.profile.model.Profile;
-import whatsapp.web.profile.model.ProfilePhoto;
 
 import java.sql.Types;
 import java.time.LocalDateTime;
@@ -24,7 +23,7 @@ public class Usuario {
     @Column(nullable = false, length=300)
     private String name;
 
-    @Column(nullable = false, length=20)
+    @Column(nullable = false, length=20, unique = true)
     private String username;
 
     @Column(nullable = false, length=300)

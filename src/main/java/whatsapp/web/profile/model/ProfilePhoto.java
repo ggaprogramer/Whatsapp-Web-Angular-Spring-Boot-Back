@@ -21,7 +21,7 @@ public class ProfilePhoto {
 
     @OneToOne
     @JoinColumn(name = "profile_id", referencedColumnName = "id", nullable = false)
-    private Profile user;
+    private Profile profile;
 
     @Column
     private String bucket;

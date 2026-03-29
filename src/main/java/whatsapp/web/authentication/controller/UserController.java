@@ -24,9 +24,4 @@ public class UserController {
         return userService.encontrarTodos();
     }
 
-    /*@PutMapping("/update-photo")
-    public ResponseEntity<?> updatePhoto(@RequestParam("file") MultipartFile file){
-
-    }*/
-
 }
