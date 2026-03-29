@@ -20,13 +20,11 @@ public class ProfileController {
     @PutMapping("/update")
     public ResponseEntity<ResponseDTO> updateProfile(@RequestBody UpdateProfileDTO updateProfileDTO,
                                                      HttpServletRequest request) throws InterruptedException {
-        Thread.sleep(2000);
         return profileService.updateProfile(updateProfileDTO, request);
     }
 
     @GetMapping
     public ResponseEntity<ProfileResponseDTO> getProfile(HttpServletRequest request) throws InterruptedException {
-        Thread.sleep(2000);
         return profileService.getProfile(request);
     }
 

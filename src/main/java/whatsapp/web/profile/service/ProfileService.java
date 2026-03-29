@@ -55,9 +55,13 @@ public class ProfileService {
         return profile.orElse(null);
     }
 
-    public Profile atualizarPerfil(Profile profile, ProfilePhoto photo, String name, String description, String phone) {
+    public Profile atualizarPerfil(Profile profile, ProfilePhoto photo,
+                                   String name, String username, String description, String phone) {
         if(name != null && !name.isEmpty()){
-            userService.updateUser(profile.getUser(), name);
+            userService.updateUser(profile.getUser(), name, "");
+        }
+        if(username != null && !username.isEmpty()){
+            userService.updateUser(profile.getUser(), "", username);
         }
         if(description != null && !description.isEmpty()){
             profile.setDescription(description);
@@ -122,6 +126,7 @@ public class ProfileService {
         String base64File = updateProfileDTO.base64File();
         String mimeType = updateProfileDTO.mimeType();
         String name = updateProfileDTO.name();
+        String username = updateProfileDTO.username();
         String description = updateProfileDTO.description();
         String phone = updateProfileDTO.phone();
 
@@ -134,6 +139,16 @@ public class ProfileService {
                             StatusResponse.ERROR,
                             "Acesso Negado. Por favor, faça o login novamente ou crie uma conta.",
                             "authenticated"));
+        }
+
+        Usuario findUser = userService.encontrarPorUsername(username);
+        if(findUser != null && !findUser.getUsername().equals(username)){
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(new ResponseDTO(
+                            StatusResponse.ERROR,
+                            "Esse nome de usuário já existe. Por favor, escolha outro.",
+                            "username"));
         }
 
         ProfilePhoto profilePhoto = null;
@@ -202,7 +217,7 @@ public class ProfileService {
                             "file"));
         }
 
-        this.atualizarPerfil(findProfile, profilePhoto, name, description, phone);
+        this.atualizarPerfil(findProfile, profilePhoto, name, username, description, phone);
 
         return ResponseEntity
                 .status(HttpStatus.OK)

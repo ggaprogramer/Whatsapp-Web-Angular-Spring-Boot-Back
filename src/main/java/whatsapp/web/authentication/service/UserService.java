@@ -70,9 +70,15 @@ public class UserService {
         userRepository.save(usuario);
     }
 
-    public Usuario updateUser(Usuario user, String name){
-        user.setName(name);
-        userRepository.save(user);
+    public Usuario updateUser(Usuario user, String name, String username){
+        if(name != null && !name.isEmpty()){
+            user.setName(name);
+            userRepository.save(user);
+        }
+        else if(username != null && !username.isEmpty()){
+            user.setUsername(username);
+            userRepository.save(user);
+        }
         return user;
     }
 }
