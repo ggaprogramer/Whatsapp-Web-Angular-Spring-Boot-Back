@@ -45,6 +45,7 @@ public class SecurityConfig {
                         .requestMatchers( "/swagger-ui.html").hasRole("ADMIN")
                         .requestMatchers( "/swagger-ui/**").hasRole("ADMIN")
                         .requestMatchers( "/webjars/**").hasRole("ADMIN")
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .anyRequest().authenticated();
                 })
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)

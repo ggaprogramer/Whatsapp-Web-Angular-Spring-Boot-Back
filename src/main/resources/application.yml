@@ -1,6 +1,9 @@
 spring:
   application:
     name: whatsappweb
+  output:
+    ansi:
+      enabled: ALWAYS
   datasource:
     url: jdbc:postgresql://localhost:5432/database_whatsapp_web
     username: myuser
@@ -21,3 +24,17 @@ spring:
     account-id: ${ACCOUNT_ID_CLOUDFARE}
     r2-region: ${R2_REGION_CLOUDFARE}
     bucket-profile-photo-name: profile-photo
+
+logging:
+  file:
+    name: app.log
+  pattern:
+    console: '%clr(%d{dd-MM-yyyy HH:mm:ss.SSS}){faint} %clr(%5p) %clr([%t]){faint} %clr(%-40.40logger){cyan} %clr(:){yellow} %m%n'
+
+management:
+  server:
+    port: 9090
+  endpoints:
+    web:
+      exposure:
+        include: "*"
