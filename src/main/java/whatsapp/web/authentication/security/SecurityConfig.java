@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.core.GrantedAuthorityDefaults;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -38,6 +39,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/is-authenticated").permitAll()
+                        .requestMatchers( "/v2/api-docs/**").hasRole("ADMIN")
+                        .requestMatchers( "/v3/api-docs/**").hasRole("ADMIN")
+                        .requestMatchers( "/swagger-resources/**").hasRole("ADMIN")
+                        .requestMatchers( "/swagger-ui.html").hasRole("ADMIN")
+                        .requestMatchers( "/swagger-ui/**").hasRole("ADMIN")
+                        .requestMatchers( "/webjars/**").hasRole("ADMIN")
                         .anyRequest().authenticated();
                 })
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
