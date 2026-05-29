@@ -151,6 +151,7 @@ public class RequestService {
         newFriendShip.setProfileSender(findProfile);
         newFriendShip.setProfileRecipient(profile);
         newFriendShip.setSituation(SituationFriendShip.PENDING);
+        friendShipRepository.save(newFriendShip);
 
         return ResponseEntity
                 .status(HttpStatus.OK)
@@ -162,6 +163,63 @@ public class RequestService {
 
     }
 
+    @Transactional
+    public ResponseEntity<RequestResponseDTO> deleteRequestFriendShip(RequestDTO requestDTO, HttpServletRequest request){
+        Profile findProfile = profileService.getProfileAuthenticated(request);
+
+        if(findProfile == null){
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(new RequestResponseDTO(
+                            StatusResponse.ERROR,
+                            "Acesso Negado. Por favor, faça o login novamente ou crie uma conta.",
+                            "authenticated"));
+        }
+
+        String username = requestDTO.username();
+
+        Usuario user = userService.encontrarPorUsername(username);
+
+        if(user == null){
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(new RequestResponseDTO(
+                            StatusResponse.ERROR,
+                            "Usuário não encontrado.",
+                            "user_not_found"));
+        }
+
+        Profile profile = profileService.findProfileByUser(user);
+
+        if(profile == null){
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(new RequestResponseDTO(
+                            StatusResponse.ERROR,
+                            "O usuário enviado não possui um perfil associado. Por favor, fale com o suporte.",
+                            "user_not_found"));
+        }
+
+        FriendShip friendShip1 = friendShipRepository.findByProfileSenderAndProfileRecipient(findProfile, profile);
+        if((friendShip1 != null && friendShip1.getSituation().equals(SituationFriendShip.PENDING))){
+            friendShipRepository.delete(friendShip1);
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(new RequestResponseDTO(
+                            StatusResponse.SUCCESS,
+                            "O pedido de amizade removido com sucesso.",
+                            "friendship"));
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new RequestResponseDTO(
+                        StatusResponse.ERROR,
+                        "Você não possui um pedido de amizade pendente com esse usuário.",
+                        "friendship"));
+
+    }
+
     public Boolean verifyFriendShip(Profile profileSender, Profile profileRecipient){
         FriendShip friendShip1 = friendShipRepository
                 .findByProfileSenderAndProfileRecipient(profileSender, profileRecipient);
@@ -169,10 +227,28 @@ public class RequestService {
         FriendShip friendShip2 = friendShipRepository
                 .findByProfileRecipientAndProfileSender(profileSender, profileRecipient);
 
-        if(friendShip1 != null || friendShip2 != null){
+        if(friendShip1 != null &&
+                friendShip1.getSituation().equals(SituationFriendShip.APPROVED)
+                || friendShip2 != null && friendShip2.getSituation().equals(SituationFriendShip.APPROVED) ){
             return Boolean.TRUE;
         }
         return Boolean.FALSE;
+    }
+
+    public SituationFriendShip getSituationFriendShip(Profile profileSender, Profile profileRecipient){
+        FriendShip friendShip1 = friendShipRepository
+                .findByProfileSenderAndProfileRecipient(profileSender, profileRecipient);
+
+        FriendShip friendShip2 = friendShipRepository
+                .findByProfileRecipientAndProfileSender(profileSender, profileRecipient);
+
+        if(friendShip1 != null){
+            return friendShip1.getSituation();
+        }
+        if(friendShip2 != null){
+            return friendShip2.getSituation();
+        }
+        return null;
     }
 
     public ResponseEntity<List<ProfileFormattedDTO>> getProfileListForFriendShip(HttpServletRequest request) {
@@ -209,7 +285,9 @@ public class RequestService {
                                     profile.getUser().getEmail(),
                                     profile.getDescription(),
                                     profile.getPhone(),
-                                    linkPhoto
+                                    linkPhoto,
+                                    this.getSituationFriendShip(findProfile, profile)
+
                             );
                         }).collect(Collectors.toList()));
 

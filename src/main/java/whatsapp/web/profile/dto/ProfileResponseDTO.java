@@ -8,6 +8,7 @@ public record ProfileResponseDTO(StatusResponse status,
                                  String name,
                                  String username,
                                  String email,
+                                 Boolean confirmedEmail,
                                  String description,
                                  String phone,
                                  String linkPhoto

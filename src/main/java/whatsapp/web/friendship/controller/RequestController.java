@@ -23,6 +23,12 @@ public class RequestController {
         return requestService.sendRequestFriendShip(requestDTO, request);
     }
 
+    @DeleteMapping("/friendship")
+    public ResponseEntity<RequestResponseDTO> deleteRequestFriendShip(@RequestBody RequestDTO requestDTO,
+                                                                      HttpServletRequest request){
+        return requestService.deleteRequestFriendShip(requestDTO, request);
+    }
+
     @GetMapping("/friendship/profile-list")
     public ResponseEntity<List<ProfileFormattedDTO>> getProfileListForFriendShip(HttpServletRequest request) {
         return requestService.getProfileListForFriendShip(request);

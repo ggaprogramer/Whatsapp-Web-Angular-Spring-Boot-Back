@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import whatsapp.web.authentication.model.Usuario;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -27,6 +28,14 @@ public class Profile {
 
     @Column
     private String phone;
+
+    @Column(name="date_created", nullable = true)
+    private LocalDateTime dateCreated;
+
+    @PrePersist
+    private void prePersist(){
+        this.dateCreated = LocalDateTime.now();
+    }
 
     @Override
     public String toString() {

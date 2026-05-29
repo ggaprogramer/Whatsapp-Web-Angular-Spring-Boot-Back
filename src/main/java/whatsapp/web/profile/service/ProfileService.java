@@ -49,6 +49,11 @@ public class ProfileService {
         return profile.orElse(null);
     }
 
+    public Profile findProfileByUser(String idUser) {
+        Optional<Profile> profile = profileRepository.findById(UUID.fromString(idUser));
+        return profile.orElse(null);
+    }
+
     public Profile createProfile(Usuario usuario) {
         Profile profile = new Profile();
         profile.setUser(usuario);
@@ -94,7 +99,7 @@ public class ProfileService {
                             StatusResponse.ERROR,
                             "Acesso Negado. Por favor, faça o login novamente ou crie uma conta.",
                             "authenticated",
-                                null, null, null, null,
+                                null, null,null, null, null,
                             null, null));
         }
 
@@ -110,7 +115,7 @@ public class ProfileService {
                                 StatusResponse.ERROR,
                                 "Ocorreu algum erro ao processar a imagem: " + e.getMessage(),
                                 "file",
-                                null, null, null, null,
+                                null, null, null, null, null,
                                 null, null));
             }
         }
@@ -124,6 +129,7 @@ public class ProfileService {
                     findProfile.getUser().getName(),
                     findProfile.getUser().getUsername(),
                     findProfile.getUser().getEmail(),
+                    findProfile.getUser().getConfirmacaoEmail(),
                     findProfile.getDescription(),
                     findProfile.getPhone(),
                         linkPhoto)

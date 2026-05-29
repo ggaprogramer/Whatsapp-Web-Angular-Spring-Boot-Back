@@ -38,11 +38,16 @@ public class Usuario {
     @Column(name="last_login", nullable = true)
     private LocalDateTime lastLogin;
 
+    @Column(name="date_created", nullable = true)
+    private LocalDateTime dateCreated;
+
     @Column(name="confirmacao_email")
     private Boolean confirmacaoEmail;
 
     @PrePersist
-    private void verifyConfirmacaoEmail(){
+    private void prePersist(){
+        this.dateCreated = LocalDateTime.now();
+
         if(this.confirmacaoEmail == null){
             setConfirmacaoEmail(false);
         }
