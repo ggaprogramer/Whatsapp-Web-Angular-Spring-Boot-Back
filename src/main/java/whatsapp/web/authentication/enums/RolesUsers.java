@@ -6,9 +6,9 @@ public enum RolesUsers {
     ADMIN("ADMIN"),
     USER("USER");
 
-    private String descricao;
+    private String description;
 
-    RolesUsers(String descricao){
-        this.descricao = descricao;
+    RolesUsers(String description){
+        this.description = description;
     }
 }

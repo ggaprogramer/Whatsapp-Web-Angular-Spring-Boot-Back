@@ -44,7 +44,7 @@ public class SecurityFilter extends OncePerRequestFilter {
                 List<RolesUsers> roles = usuario.get().getRoles();
                 List<SimpleGrantedAuthority> authorities = roles
                         .stream()
-                        .map(role -> new SimpleGrantedAuthority(role.getDescricao()))
+                        .map(role -> new SimpleGrantedAuthority(role.getDescription()))
                         .collect(Collectors.toList());
 
                 var authentication = new UsernamePasswordAuthenticationToken(usuario.get(), null, authorities);

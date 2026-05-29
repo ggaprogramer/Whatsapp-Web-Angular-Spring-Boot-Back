@@ -5,10 +5,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import whatsapp.web.config.dto.ResponseDTO;
+import whatsapp.web.friendship.dto.ProfileFormattedDTO;
 import whatsapp.web.profile.dto.ProfileResponseDTO;
 import whatsapp.web.profile.dto.UpdateProfileDTO;
-import whatsapp.web.profile.model.Profile;
 import whatsapp.web.profile.service.ProfileService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/profile")
@@ -19,12 +21,12 @@ public class ProfileController {
 
     @PutMapping("/update")
     public ResponseEntity<ResponseDTO> updateProfile(@RequestBody UpdateProfileDTO updateProfileDTO,
-                                                     HttpServletRequest request) throws InterruptedException {
+                                                     HttpServletRequest request) {
         return profileService.updateProfile(updateProfileDTO, request);
     }
 
     @GetMapping
-    public ResponseEntity<ProfileResponseDTO> getProfile(HttpServletRequest request) throws InterruptedException {
+    public ResponseEntity<ProfileResponseDTO> getProfile(HttpServletRequest request) {
         return profileService.getProfile(request);
     }
 

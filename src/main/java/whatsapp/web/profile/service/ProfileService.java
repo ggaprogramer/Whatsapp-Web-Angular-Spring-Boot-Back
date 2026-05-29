@@ -13,6 +13,8 @@ import whatsapp.web.authentication.model.Usuario;
 import whatsapp.web.authentication.service.UserService;
 import whatsapp.web.cloudfare.service.CloudfareService;
 import whatsapp.web.config.dto.ResponseDTO;
+import whatsapp.web.friendship.service.RequestService;
+import whatsapp.web.friendship.dto.ProfileFormattedDTO;
 import whatsapp.web.profile.dto.ProfileResponseDTO;
 import whatsapp.web.profile.dto.UpdateProfileDTO;
 import whatsapp.web.profile.enums.UnitSizeFile;
@@ -24,8 +26,10 @@ import whatsapp.web.profile.utils.ProfileUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Base64;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +43,11 @@ public class ProfileService {
     private final ProfileUtils profileUtils;
     private final CloudfareService cloudfareService;
     private final AuthUtils authUtils;
+
+    public Profile findProfileByUser(Usuario usuario) {
+        Optional<Profile> profile = profileRepository.findByUser(usuario);
+        return profile.orElse(null);
+    }
 
     public Profile createProfile(Usuario usuario) {
         Profile profile = new Profile();
