@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import whatsapp.web.authentication.enums.RolesUsers;
 import whatsapp.web.authentication.enums.StatusResponse;
@@ -92,7 +94,7 @@ public class RequestService {
                             "friendship"));
         }
         else if(friendShip1 != null && friendShip1.getSituation().equals(SituationFriendShip.REJECTED)
-                && !friendShip1.getTimeBlockRejectOfFriendShip().plusDays(7).isAfter(LocalDateTime.now())){
+                && !LocalDateTime.now().isAfter(friendShip1.getTimeBlockRejectOfFriendShip().plusDays(7))){
             long millis1 = LocalDateTime.now()
                     .atZone(ZoneId.systemDefault())
                     .toInstant()
@@ -111,11 +113,11 @@ public class RequestService {
                             StatusResponse.ERROR,
                             "Esse usuário rejeitou um pedido de amizade seu nos último(s) " + days +
                                     " dia(s). Por favor, aguarde o período de " +
-                                    "bloqueio para enviar um novo pedido de amizade.",
+                                    "bloqueio (7 dias) para enviar um novo pedido de amizade.",
                             "friendship"));
         }
         else if(friendShip2 != null && friendShip2.getSituation().equals(SituationFriendShip.REJECTED)
-                && !friendShip2.getTimeBlockRejectOfFriendShip().plusDays(7).isAfter(LocalDateTime.now())){
+                && !LocalDateTime.now().isAfter(friendShip2.getTimeBlockRejectOfFriendShip().plusDays(7))){
             long millis1 = LocalDateTime.now()
                     .atZone(ZoneId.systemDefault())
                     .toInstant()
@@ -134,7 +136,7 @@ public class RequestService {
                             StatusResponse.ERROR,
                             "Você rejeitou o pedido de amizade desse usuário nos último(s) " + days +
                                     " dia(s). Por favor, aguarde o período de " +
-                                    "bloqueio para enviar um novo pedido de amizade.",
+                                    "bloqueio (7 dias) para enviar um novo pedido de amizade.",
                             "friendship"));
         }
         else if((friendShip1 != null && friendShip1.getSituation().equals(SituationFriendShip.APPROVED))
@@ -220,6 +222,122 @@ public class RequestService {
 
     }
 
+    @Transactional
+    public ResponseEntity<RequestResponseDTO> rejectedRequestFriendShip(RequestDTO requestDTO,
+                                                                        HttpServletRequest request){
+        Profile findProfile = profileService.getProfileAuthenticated(request);
+
+        if(findProfile == null){
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(new RequestResponseDTO(
+                            StatusResponse.ERROR,
+                            "Acesso Negado. Por favor, faça o login novamente ou crie uma conta.",
+                            "authenticated"));
+        }
+
+        String username = requestDTO.username();
+
+        Usuario user = userService.encontrarPorUsername(username);
+
+        if(user == null){
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(new RequestResponseDTO(
+                            StatusResponse.ERROR,
+                            "Usuário não encontrado.",
+                            "user_not_found"));
+        }
+
+        Profile profile = profileService.findProfileByUser(user);
+
+        if(profile == null){
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(new RequestResponseDTO(
+                            StatusResponse.ERROR,
+                            "O usuário enviado não possui um perfil associado. Por favor, fale com o suporte.",
+                            "user_not_found"));
+        }
+
+        FriendShip friendShip1 = friendShipRepository.findByProfileSenderAndProfileRecipient(profile, findProfile);
+        if((friendShip1 != null && friendShip1.getSituation().equals(SituationFriendShip.PENDING))){
+            friendShip1.setSituation(SituationFriendShip.REJECTED);
+
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(new RequestResponseDTO(
+                            StatusResponse.SUCCESS,
+                            "O pedido de amizade foi rejeitado com sucesso.",
+                            "friendship"));
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new RequestResponseDTO(
+                        StatusResponse.ERROR,
+                        "Você não possui um pedido de amizade pendente com esse usuário.",
+                        "friendship"));
+    }
+
+    @Transactional
+    public ResponseEntity<RequestResponseDTO> approvedRequestFriendShip(RequestDTO requestDTO,
+                                                                        HttpServletRequest request){
+        Profile findProfile = profileService.getProfileAuthenticated(request);
+
+        if(findProfile == null){
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(new RequestResponseDTO(
+                            StatusResponse.ERROR,
+                            "Acesso Negado. Por favor, faça o login novamente ou crie uma conta.",
+                            "authenticated"));
+        }
+
+        String username = requestDTO.username();
+
+        Usuario user = userService.encontrarPorUsername(username);
+
+        if(user == null){
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(new RequestResponseDTO(
+                            StatusResponse.ERROR,
+                            "Usuário não encontrado.",
+                            "user_not_found"));
+        }
+
+        Profile profile = profileService.findProfileByUser(user);
+
+        if(profile == null){
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body(new RequestResponseDTO(
+                            StatusResponse.ERROR,
+                            "O usuário enviado não possui um perfil associado. Por favor, fale com o suporte.",
+                            "user_not_found"));
+        }
+
+        FriendShip friendShip1 = friendShipRepository.findByProfileSenderAndProfileRecipient(profile, findProfile);
+        if((friendShip1 != null && friendShip1.getSituation().equals(SituationFriendShip.PENDING))){
+            friendShip1.setSituation(SituationFriendShip.REJECTED);
+
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(new RequestResponseDTO(
+                            StatusResponse.SUCCESS,
+                            "O pedido de amizade foi aceito com sucesso.",
+                            "friendship"));
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(new RequestResponseDTO(
+                        StatusResponse.ERROR,
+                        "Você não possui um pedido de amizade pendente com esse usuário.",
+                        "friendship"));
+    }
+
     public Boolean verifyFriendShip(Profile profileSender, Profile profileRecipient){
         FriendShip friendShip1 = friendShipRepository
                 .findByProfileSenderAndProfileRecipient(profileSender, profileRecipient);
@@ -230,6 +348,20 @@ public class RequestService {
         if(friendShip1 != null &&
                 friendShip1.getSituation().equals(SituationFriendShip.APPROVED)
                 || friendShip2 != null && friendShip2.getSituation().equals(SituationFriendShip.APPROVED) ){
+            return Boolean.TRUE;
+        }
+        return Boolean.FALSE;
+    }
+
+    public Boolean verifyFriendShipByStatus(
+            Profile profileSender,
+            Profile profileRecipient,
+            SituationFriendShip status){
+        FriendShip friendShip = friendShipRepository
+                .findByProfileSenderAndProfileRecipient(profileSender, profileRecipient);
+
+        if(friendShip != null &&
+                friendShip.getSituation().equals(status)){
             return Boolean.TRUE;
         }
         return Boolean.FALSE;
@@ -251,6 +383,7 @@ public class RequestService {
         return null;
     }
 
+    @Transactional
     public ResponseEntity<List<ProfileFormattedDTO>> getProfileListForFriendShip(HttpServletRequest request) {
 
         Profile findProfile = profileService.getProfileAuthenticated(request);
@@ -291,5 +424,47 @@ public class RequestService {
                             );
                         }).collect(Collectors.toList()));
 
+    }
+
+    @Transactional
+    public ResponseEntity<List<ProfileFormattedDTO>> getProfileListForFriendShipFilterByStatus(
+            HttpServletRequest request, SituationFriendShip status) {
+        Profile findProfile = profileService.getProfileAuthenticated(request);
+
+        if(findProfile == null || status == null){
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(null);
+        }
+
+        List<Profile> profiles = this.profileRepository.findAll()
+                .stream()
+                .filter(profile -> !profile.getUser().getUsername().equals(findProfile.getUser().getUsername()))
+                .filter(profile -> !profile.getUser().getRoles().contains(RolesUsers.ADMIN))
+                .filter(profile -> this.verifyFriendShipByStatus(profile, findProfile, status))
+                .toList();
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(profiles.stream()
+                        .map(profile -> {
+                            String linkPhoto = null;
+                            if(profile.getPhoto() != null){
+                                ProfilePhoto profilePhoto = profile.getPhoto();
+                                try{
+                                    linkPhoto = cloudfareService.generateLinkFile(this.bucketProfilePhotoName, profilePhoto.getName());
+                                } catch (S3Exception | IOException e) {}
+                            }
+                            return new ProfileFormattedDTO(
+                                    profile.getUser().getName(),
+                                    profile.getUser().getUsername(),
+                                    profile.getUser().getEmail(),
+                                    profile.getDescription(),
+                                    profile.getPhone(),
+                                    linkPhoto,
+                                    this.getSituationFriendShip(findProfile, profile)
+
+                            );
+                        }).collect(Collectors.toList()));
     }
 }
